@@ -11,7 +11,13 @@ if _raw.startswith("postgresql://") and "+psycopg" not in _raw:
 else:
     DATABASE_URL = _raw
 
-engine       = create_engine(DATABASE_URL, pool_pre_ping=True, pool_size=5, max_overflow=10) if DATABASE_URL else None
+engine       = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=10,
+    connect_args={"connect_timeout": 5},
+) if DATABASE_URL else None
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine) if engine else None
 Base         = declarative_base()
 

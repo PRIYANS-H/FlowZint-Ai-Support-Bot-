@@ -23,6 +23,7 @@ from ticketing.priority import compute_priority, should_create_ticket
 from ticketing.create_ticket import create_ticket, get_all_tickets
 from churn.predict import predict_churn, get_all_churn_risks
 from clustering.live_clusters import get_live_clusters
+from llm.groq_generate import generate_answer
 
 
 app = FastAPI(title="Flowzint API", version="3.0.0")
@@ -37,7 +38,10 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup_event():
-    create_tables()
+    try:
+        create_tables()
+    except Exception as e:
+        print(f"[startup] DB table creation skipped: {e}")
 
 
 # ── Request / Response schemas ────────────────────────────────────────
@@ -70,9 +74,6 @@ class CorrectionRequest(BaseModel):
 
 @app.post("/api/chat", response_model=ChatResponse)
 def chat(req: ChatRequest, db: Session = Depends(get_db)):
-    if db is None:
-        raise HTTPException(status_code=503, detail="Database unavailable")
-
     text_in = req.text.strip()
 
     # 1. Sentiment analysis
@@ -82,26 +83,31 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)):
     escalate    = sent_result["escalate"]
 
     # 2. Persist user message
-    user_msg = DBMessage(
-        session_id = req.session_id,
-        role       = "user",
-        text       = text_in,
-        sentiment  = sentiment,
-    )
-    db.add(user_msg)
+    if db:
+        user_msg = DBMessage(
+            session_id = req.session_id,
+            role       = "user",
+            text       = text_in,
+            sentiment  = sentiment,
+        )
+        db.add(user_msg)
 
     # 3. Log sentiment for drift tracking
-    sl = SentimentLog(session_id=req.session_id, sentiment=sentiment, score=sent_result.get("conf_sent", 0.65))
-    db.add(sl)
-    db.commit()
+    if db:
+        sl = SentimentLog(session_id=req.session_id, sentiment=sentiment, score=sent_result.get("conf_sent", 0.65))
+        db.add(sl)
+        db.commit()
 
     # 4. Compute drift from full session history
-    drift = get_session_drift(req.session_id, db)
+    drift = get_session_drift(req.session_id, db) if db else {"trend": "stable", "score": 0.5, "label": "Stable", "color": "#534AB7"}
 
     # 5. RAG retrieval
-    try:
-        rag = retrieve_faq(text_in, db)
-    except Exception:
+    if db:
+        try:
+            rag = retrieve_faq(text_in, db)
+        except Exception:
+            rag = {"answer": None, "conf": 0.18, "cat": "unknown", "self_corrected": False}
+    else:
         rag = {"answer": None, "conf": 0.18, "cat": "unknown", "self_corrected": False}
 
     answer         = rag.get("answer")
@@ -109,16 +115,29 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)):
     cat            = rag.get("cat", "unknown")
     self_corrected = rag.get("self_corrected", False)
 
-    # 6. Hinglish prefix
-    if answer and hinglish:
-        answer = "Bilkul! " + answer
+    # 5.5. Always use Groq — FAQ context grounds the answer, making every response
+    # feel AI-generated rather than a verbatim database lookup.
+    faq_context   = answer if conf >= 0.40 else None
+    original_conf = conf
+    llm_res = generate_answer(
+        query=text_in,
+        faq_context=faq_context,
+        sentiment=sentiment,
+        hinglish=hinglish
+    )
+    answer = llm_res["answer"]
+    if faq_context:
+        conf = original_conf   # keep the higher FAQ-based confidence when grounded
+    else:
+        conf = llm_res["conf"]
+        cat  = "llm_generated"
 
     # 7. Escalation / ticket decision
     priority              = compute_priority(sentiment, drift, escalate, conf)
     create_tkt, trigger   = should_create_ticket(sentiment, drift, escalate, conf)
     ticket_id             = None
 
-    if create_tkt:
+    if create_tkt and db:
         tkt_data = create_ticket(
             session_id = req.session_id,
             customer   = req.customer,
@@ -136,24 +155,26 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)):
         answer = None
 
     # 9. Persist bot message
-    bot_msg = DBMessage(
-        session_id = req.session_id,
-        role       = "bot",
-        text       = answer or "",
-        sentiment  = "neutral",
-        cat        = cat,
-        conf       = conf,
-        escalated  = create_tkt and priority == "high",
-    )
-    db.add(bot_msg)
+    if db:
+        bot_msg = DBMessage(
+            session_id = req.session_id,
+            role       = "bot",
+            text       = answer or "",
+            sentiment  = "neutral",
+            cat        = cat,
+            conf       = conf,
+            escalated  = create_tkt and priority == "high",
+        )
+        db.add(bot_msg)
 
     # 10. Update churn score in background (non-blocking)
-    try:
-        predict_churn(req.session_id, req.customer, db)
-    except Exception:
-        pass
+    if db:
+        try:
+            predict_churn(req.session_id, req.customer, db)
+        except Exception:
+            pass
 
-    db.commit()
+        db.commit()
 
     return ChatResponse(
         answer         = answer,
@@ -218,18 +239,84 @@ def pending_reviews(db: Session = Depends(get_db)):
     return get_pending_reviews(db)
 
 
+# ── PATCH /api/tickets/{ref}/resolve ─────────────────────────────────
+
+@app.patch("/api/tickets/{ticket_ref}/resolve")
+def resolve_ticket(ticket_ref: str, db: Session = Depends(get_db)):
+    if db is None:
+        return {"status": "local_only"}
+    try:
+        db.execute(text("UPDATE tickets SET status = 'resolved' WHERE ticket_ref = :ref"),
+                   {"ref": ticket_ref})
+        db.commit()
+        return {"status": "resolved"}
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Update failed")
+
+
+# ── GET /api/analytics/drift ─────────────────────────────────────────
+
+@app.get("/api/analytics/drift")
+def drift_analytics(session_id: str = "current", db: Session = Depends(get_db)):
+    if db is None:
+        return {"drift": {"trend": "stable", "score": 0.5, "label": "Stable", "color": "#534AB7"}}
+    drift = get_session_drift(session_id, db)
+    return {"drift": drift}
+
+
+# ── GET /api/analytics/sentiment-trend ───────────────────────────────
+
+@app.get("/api/analytics/sentiment-trend")
+def sentiment_trend(db: Session = Depends(get_db)):
+    if db is None:
+        return []
+    try:
+        rows = db.execute(text("""
+            SELECT
+                EXTRACT(HOUR FROM ts)::int AS hour,
+                sentiment,
+                COUNT(*) AS cnt
+            FROM sentiment_logs
+            WHERE ts >= CURRENT_DATE
+            GROUP BY EXTRACT(HOUR FROM ts)::int, sentiment
+            ORDER BY hour
+        """)).fetchall()
+
+        hourly: dict = {}
+        for r in rows:
+            h = r.hour
+            if h not in hourly:
+                if h == 0:    label = "12am"
+                elif h < 12:  label = f"{h}am"
+                elif h == 12: label = "12pm"
+                else:         label = f"{h - 12}pm"
+                hourly[h] = {"hour": label, "pos": 0, "neu": 0, "neg": 0}
+            if r.sentiment == "positive":
+                hourly[h]["pos"] = int(r.cnt)
+            elif r.sentiment == "negative":
+                hourly[h]["neg"] = int(r.cnt)
+            else:
+                hourly[h]["neu"] = int(r.cnt)
+
+        return [hourly[k] for k in sorted(hourly.keys())]
+    except Exception:
+        return []
+
+
 # ── Health check ─────────────────────────────────────────────────────
 
 @app.get("/api/health")
 def health(db: Session = Depends(get_db)):
     db_ok = False
+    db_err = None
     if db is not None:
         try:
             db.execute(text("SELECT 1"))
             db_ok = True
-        except Exception:
-            pass
-    return {"status": "ok", "db": db_ok}
+        except Exception as e:
+            db_err = str(e)
+    return {"status": "ok", "db": db_ok, "db_err": db_err}
 
 
 # ── Mangum adapter for Vercel Lambda ─────────────────────────────────

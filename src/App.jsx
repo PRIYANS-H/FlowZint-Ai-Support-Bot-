@@ -46,7 +46,7 @@ export default function App() {
         @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
 
-      <div style={{ display: "flex", height: 640, border: "0.5px solid var(--color-border-tertiary)", borderRadius: 12, overflow: "hidden", background: "var(--color-background-primary)", position: "relative" }}>
+      <div style={{ display: "flex", flex: 1, border: "0.5px solid var(--color-border-tertiary)", borderRadius: 12, overflow: "hidden", background: "var(--color-background-primary)", position: "relative" }}>
         <ToastStack toasts={chat.toasts} />
 
         {/* Sidebar */}
@@ -89,7 +89,7 @@ export default function App() {
 
           {view === "chat"      && <ChatView {...chat} />}
           {view === "dashboard" && <DashboardView stats={chat.stats} selfCorrected={chat.selfCorrected} tickets={chat.tickets} />}
-          {view === "tickets"   && <TicketsView tickets={chat.tickets} />}
+          {view === "tickets"   && <TicketsView tickets={chat.tickets} resolveTicket={chat.resolveTicket} />}
         </div>
       </div>
     </>

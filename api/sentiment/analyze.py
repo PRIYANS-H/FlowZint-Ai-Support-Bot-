@@ -4,7 +4,16 @@ HF_TOKEN   = os.environ.get("HF_TOKEN", "")
 SENT_URL   = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-xlm-roberta-base-sentiment-multilingual"
 HEADERS    = {"Authorization": f"Bearer {HF_TOKEN}", "Content-Type": "application/json"}
 
-HINGLISH_WORDS  = ["nahi", "yaar", "mera", "abhi", "karo", "hai", "hua", "bhai", "iska", "kyun", "aaya", "kab", "kuch", "dekho", "bilkul", "theek"]
+HINGLISH_WORDS  = [
+    "nahi", "yaar", "mera", "abhi", "karo", "hua", "bhai", "iska", "kyun",
+    "aaya", "kab", "kuch", "dekho", "bilkul", "theek", "aur", "lekin",
+    "karna", "chahiye", "gaya", "milenge", "ghante", "wala", "matlab",
+    "samjha", "zaroor", "jaldi", "dijiye", "karein", "milega",
+]
+_HINGLISH_RE = re.compile(
+    r"\b(" + "|".join(re.escape(w) for w in HINGLISH_WORDS) + r")\b",
+    re.IGNORECASE,
+)
 NEG_WORDS       = ["frustrated", "angry", "terrible", "horrible", "worst", "disappointed", "useless", "ridiculous", "third time", "unresolved", "still waiting", "never", "pathetic", "awful", "outrageous", "unacceptable", "disgusting", "furious", "incompetent"]
 POS_WORDS       = ["thank", "great", "excellent", "perfect", "wonderful", "happy", "love", "awesome", "fast", "resolved", "helpful", "amazing", "appreciate", "good"]
 ESCALATE_WORDS  = ["third time", "never resolved", "unacceptable", "speak to manager", "this is a joke", "three times", "demanding refund", "legal action", "consumer forum", "chargeback"]
@@ -25,7 +34,7 @@ def analyze(text: str) -> dict:
     Tries HF Inference API; falls back to keyword scoring on any error.
     """
     t          = text.lower()
-    hinglish   = any(w in t for w in HINGLISH_WORDS)
+    hinglish   = bool(_HINGLISH_RE.search(t))
     escalate   = any(w in t for w in ESCALATE_WORDS)
 
     # HF Inference API

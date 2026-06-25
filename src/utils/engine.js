@@ -43,13 +43,15 @@ export function retrieveFAQ(query, selfCorrected = {}) {
 
   let best = null, bestScore = 0;
   FAQ_KB.forEach(f => {
+    // Boost Hinglish entries when the query is Hinglish
+    const hinglishBoost = hinglish && f.hinglish ? 0.15 : 0;
     const words = f.q.split(" ");
-    const score = words.filter(w => q.includes(w)).length / words.length;
+    const score = words.filter(w => q.includes(w)).length / words.length + hinglishBoost;
     if (score > bestScore) { bestScore = score; best = f; }
   });
 
-  if (bestScore > 0.35 && best)
-    return { answer: best.a, conf: best.conf, cat: best.cat, hinglish };
+  if (bestScore > 0.30 && best)
+    return { answer: best.a, conf: best.conf, cat: best.cat, hinglish: hinglish || !!best.hinglish };
 
   return { answer: null, conf: 0.18, cat: "unknown", hinglish };
 }

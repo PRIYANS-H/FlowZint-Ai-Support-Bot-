@@ -4,7 +4,6 @@ mangum==0.17.0
 sqlalchemy>=2.0.36
 psycopg[binary]>=3.3.4
 pgvector==0.2.5
-scikit-learn>=1.7.0
 numpy>=2.0.0
 python-dotenv==1.0.1
 requests==2.32.3

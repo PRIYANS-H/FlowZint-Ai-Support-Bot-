@@ -1,7 +1,5 @@
 import os, requests
 import numpy as np
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import normalize
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
@@ -18,10 +16,48 @@ def _embed_batch(texts: list[str]) -> list[list[float]]:
     return resp.json()
 
 
+def _l2_normalize(X: np.ndarray) -> np.ndarray:
+    norms = np.linalg.norm(X, axis=1, keepdims=True)
+    norms[norms == 0] = 1.0
+    return X / norms
+
+
+def _kmeans(X: np.ndarray, k: int, n_init: int = 10, max_iter: int = 100) -> tuple:
+    """Pure numpy KMeans — no scipy/scikit-learn required."""
+    rng = np.random.default_rng(42)
+    best_labels, best_centers, best_inertia = None, None, float("inf")
+
+    for _ in range(n_init):
+        centers = X[rng.choice(len(X), k, replace=False)].copy()
+        labels = np.zeros(len(X), dtype=int)
+
+        for _ in range(max_iter):
+            dists  = np.linalg.norm(X[:, np.newaxis, :] - centers[np.newaxis, :, :], axis=2)
+            new_labels = np.argmin(dists, axis=1)
+            new_centers = np.array([
+                X[new_labels == i].mean(axis=0) if (new_labels == i).any() else centers[i]
+                for i in range(k)
+            ])
+            if np.array_equal(new_labels, labels) or np.allclose(centers, new_centers, atol=1e-4):
+                labels = new_labels
+                centers = new_centers
+                break
+            labels, centers = new_labels, new_centers
+
+        inertia = float(sum(
+            np.sum(np.linalg.norm(X[labels == i] - centers[i], axis=1) ** 2)
+            for i in range(k) if (labels == i).any()
+        ))
+        if inertia < best_inertia:
+            best_inertia, best_labels, best_centers = inertia, labels.copy(), centers.copy()
+
+    return best_labels, best_centers
+
+
 def get_live_clusters(db: Session, min_messages: int = 10) -> list[dict]:
     """
-    Pull today's user messages, embed via HF API, run KMeans, return top-N cluster summaries.
-    Falls back to an empty list if insufficient data or API is unavailable.
+    Pull today's user messages, embed via HF API, run KMeans, return cluster summaries.
+    Falls back to empty list if insufficient data or API unavailable.
     """
     try:
         rows = db.execute(text("""
@@ -36,7 +72,6 @@ def get_live_clusters(db: Session, min_messages: int = 10) -> list[dict]:
         if len(texts) < min_messages:
             return []
 
-        # Embed in one batch (HF allows up to ~100 inputs; split if needed)
         if len(texts) <= 100:
             vectors = _embed_batch(texts)
         else:
@@ -44,21 +79,18 @@ def get_live_clusters(db: Session, min_messages: int = 10) -> list[dict]:
             for i in range(0, len(texts), 100):
                 vectors.extend(_embed_batch(texts[i : i + 100]))
 
-        X = normalize(np.array(vectors, dtype=np.float32))
-        n = min(_N_CLUSTERS, len(texts))
-        km = KMeans(n_clusters=n, n_init=10, random_state=42)
-        labels = km.fit_predict(X)
+        X = _l2_normalize(np.array(vectors, dtype=np.float32))
+        k = min(_N_CLUSTERS, len(texts))
+        labels, centers = _kmeans(X, k)
 
         clusters = []
-        for cid in range(n):
+        for cid in range(k):
             mask    = labels == cid
             members = [texts[i] for i, m in enumerate(mask) if m]
             if not members:
                 continue
-            # Pick the member closest to centroid as the representative issue
-            centroid   = km.cluster_centers_[cid]
             member_vecs = X[mask]
-            dists       = np.linalg.norm(member_vecs - centroid, axis=1)
+            dists       = np.linalg.norm(member_vecs - centers[cid], axis=1)
             rep_idx     = int(np.argmin(dists))
             clusters.append({
                 "cluster_id":           cid,
@@ -66,7 +98,6 @@ def get_live_clusters(db: Session, min_messages: int = 10) -> list[dict]:
                 "representative_issue": members[rep_idx],
             })
 
-        # Sort by count desc
         clusters.sort(key=lambda c: c["count"], reverse=True)
         return clusters
 

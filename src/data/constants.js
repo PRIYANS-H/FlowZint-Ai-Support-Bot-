@@ -1,70 +1,157 @@
-// ── Knowledge base ─────────────────────────────────────────────────
+// ── Knowledge base (JS fallback — used when API is unavailable) ──────
+// Covers all major categories + Hinglish variants.
+// Primary path is the RAG+Groq API; this runs only on network failure.
 export const FAQ_KB = [
-  { q: "refund policy", a: "Our refund policy allows returns within 30 days of purchase. You'll receive a full refund to your original payment method within 5–7 business days once we receive the item.", conf: 0.92, cat: "refunds" },
-  { q: "track shipment", a: "You can track your shipment by visiting our tracking page and entering your order ID. You'll also receive an email with a tracking link once your order ships.", conf: 0.89, cat: "shipping" },
-  { q: "cancel order", a: "Orders can be cancelled within 2 hours of placement. After that, please wait for delivery and use our standard returns process.", conf: 0.87, cat: "orders" },
-  { q: "delivery time", a: "Standard delivery takes 5–7 business days. Express shipping (2–3 days) is available at checkout for an additional fee.", conf: 0.91, cat: "shipping" },
-  { q: "payment methods", a: "We accept all major credit cards, UPI, net banking, and wallets including Paytm and PhonePe.", conf: 0.94, cat: "payments" },
-  { q: "contact support", a: "Our support team is available 24/7 via this chat or at support@flowzint.com. Average response time is under 2 hours.", conf: 0.88, cat: "support" },
-  { q: "exchange item", a: "Exchanges are supported within 14 days of delivery. Visit our returns portal to start an exchange request.", conf: 0.85, cat: "returns" },
-  { q: "account password", a: "To reset your password, click 'Forgot password' on the login page. A reset link will be sent to your registered email.", conf: 0.90, cat: "account" },
-  { q: "size guide", a: "Our size guide is available on each product page. If you're between sizes, we recommend sizing up for comfort. Still unsure? Contact support for personalised advice.", conf: 0.86, cat: "products" },
-  { q: "damaged item", a: "We're sorry to hear that! Please share a photo of the damaged item via chat and we'll arrange a free replacement or full refund within 24 hours.", conf: 0.91, cat: "returns" },
-  { q: "loyalty points", a: "Your loyalty points are visible in your account dashboard. Points can be redeemed at checkout — 100 points = ₹10 discount. Points expire after 12 months.", conf: 0.88, cat: "loyalty" },
-  { q: "bulk order", a: "For bulk or corporate orders of 10+ items, please email bulk@flowzint.com for a custom quote and priority processing with dedicated support.", conf: 0.83, cat: "orders" },
-  { q: "international shipping", a: "We ship to 45+ countries. International delivery takes 10–15 business days. Customs duties may apply depending on your destination country.", conf: 0.87, cat: "shipping" },
-  { q: "warranty", a: "All products include a 1-year manufacturer warranty. To raise a warranty claim, contact support with your order ID and a description of the issue.", conf: 0.90, cat: "products" },
-  { q: "promo code", a: "Enter your promo code at checkout in the 'Discount code' field. Codes are case-sensitive and can only be used once per account.", conf: 0.93, cat: "payments" },
-  { q: "app not working", a: "Try force-closing the app and reopening it. If that doesn't help, clear the app cache in your phone settings or reinstall. Contact support if the issue persists.", conf: 0.85, cat: "support" },
+  // Refunds
+  { q: "what is your refund policy",             a: "Our refund policy allows returns within 30 days of purchase. You'll receive a full refund to your original payment method within 5–7 business days once we receive the item.",                                                                                            conf: 0.93, cat: "refunds" },
+  { q: "how long does my refund take",           a: "Refunds are processed within 5–7 business days after we receive your return. Your bank may take an additional 1–3 days to reflect the credit.",                                                                                                                        conf: 0.92, cat: "refunds" },
+  { q: "can i get a refund without a receipt",   a: "Yes. If you have your order ID or the email used to place the order we can look up your purchase and process the refund.",                                                                                                                                              conf: 0.90, cat: "refunds" },
+  { q: "refund hasn't arrived after 10 days",    a: "Please contact support with your order ID. We'll investigate with our payments team and resolve it within 24 hours.",                                                                                                                                                   conf: 0.91, cat: "refunds" },
+  { q: "refund for cancelled order",             a: "Refunds for cancelled orders are processed within 3–5 business days to your original payment method. No return shipment is needed.",                                                                                                                                    conf: 0.91, cat: "refunds" },
+  { q: "partial refund",                         a: "Yes. If only part of your order is faulty or missing we'll issue a partial refund for the affected items within 5–7 business days.",                                                                                                                                    conf: 0.89, cat: "refunds" },
+  { q: "refund amount is less than expected",    a: "The refunded amount matches the item price at purchase minus any non-refundable fees. Contact support with your order ID for a detailed breakdown.",                                                                                                                     conf: 0.88, cat: "refunds" },
+  { q: "check refund status",                    a: "Log into your account and go to Order History. Select the order and click 'View Refund Status'. You'll also receive email updates at each stage.",                                                                                                                      conf: 0.90, cat: "refunds" },
+  { q: "returned item but no refund yet",        a: "Please allow 5–7 business days from when we receive your return. If overdue contact support with your return tracking ID.",                                                                                                                                             conf: 0.89, cat: "refunds" },
+
+  // Returns & Exchanges
+  { q: "how do i return an item",                a: "Visit our returns portal at flowzint.com/returns and enter your order ID. Select the item and reason then schedule a pickup or drop-off.",                                                                                                                              conf: 0.92, cat: "returns" },
+  { q: "can i return a sale item",               a: "Sale items can be returned within 14 days. Final-sale items marked at checkout are non-returnable.",                                                                                                                                                                    conf: 0.90, cat: "returns" },
+  { q: "do you offer an exchange",               a: "Exchanges are supported within 14 days of delivery. Visit our returns portal to start an exchange request and select your replacement size or item.",                                                                                                                   conf: 0.91, cat: "returns" },
+  { q: "exchange for different product",         a: "Cross-product exchanges are possible as long as the value is equal. If the new item costs more you'll pay the difference.",                                                                                                                                             conf: 0.88, cat: "returns" },
+  { q: "received damaged item",                  a: "We're sorry! Share a photo of the damaged item via chat and we'll arrange a free replacement or full refund within 24 hours.",                                                                                                                                          conf: 0.93, cat: "returns" },
+  { q: "received wrong item",                    a: "Apologies for the mix-up. Share a photo of the wrong item via chat. We'll dispatch the correct item immediately at no extra cost.",                                                                                                                                     conf: 0.93, cat: "returns" },
+  { q: "item looks different from photo",        a: "We're sorry. Please share a photo via chat. If it's a genuine difference we'll arrange a free replacement or full refund within 24 hours.",                                                                                                                             conf: 0.90, cat: "returns" },
+
+  // Shipping
+  { q: "how do i track my shipment",             a: "Visit flowzint.com/track and enter your order ID. You'll also receive an email with a tracking link once your order ships.",                                                                                                                                            conf: 0.93, cat: "shipping" },
+  { q: "how long does standard delivery take",   a: "Standard delivery takes 5–7 business days. Express shipping (2–3 days) is available at checkout for an additional fee.",                                                                                                                                                conf: 0.93, cat: "shipping" },
+  { q: "is express shipping available",          a: "Yes. Express shipping (2–3 business days) is available for most pin codes. Select it at checkout before placing your order.",                                                                                                                                           conf: 0.91, cat: "shipping" },
+  { q: "can i change my delivery address",       a: "Address changes are possible within 2 hours of order placement. After that the order is dispatched and changes cannot be made.",                                                                                                                                        conf: 0.90, cat: "shipping" },
+  { q: "order shows delivered but i didn't receive it", a: "Check with neighbours and building reception first. If still not found contact us within 48 hours and we'll investigate and reship or refund.",                                                                                                                conf: 0.92, cat: "shipping" },
+  { q: "no one home during delivery",            a: "The courier will attempt delivery twice. After two failed attempts the package is held at a local hub for 5 days before being returned.",                                                                                                                               conf: 0.90, cat: "shipping" },
+  { q: "package lost in transit",                a: "Please contact support within 14 days of the expected delivery date. We'll investigate with the courier and reship or refund within 3 business days.",                                                                                                                  conf: 0.91, cat: "shipping" },
+  { q: "order stuck in transit",                 a: "This may indicate a customs hold or courier delay. Contact support with your order ID and we'll escalate with the shipping partner within 48 hours.",                                                                                                                   conf: 0.89, cat: "shipping" },
+  { q: "same day delivery",                      a: "Same-day delivery is available in select cities for orders placed before 11am. Check availability by entering your pin code at checkout.",                                                                                                                              conf: 0.88, cat: "shipping" },
+  { q: "do you ship internationally",            a: "We ship to 45+ countries. International delivery takes 10–15 business days. Customs duties may apply depending on your destination.",                                                                                                                                   conf: 0.91, cat: "shipping" },
+
+  // Orders
+  { q: "how do i cancel my order",               a: "Orders can be cancelled within 2 hours of placement. After that please wait for delivery and use our standard returns process.",                                                                                                                                         conf: 0.92, cat: "orders" },
+  { q: "can i modify my order after placing it", a: "Item changes are not possible after an order is confirmed. You can cancel within 2 hours and place a new order with the correct items.",                                                                                                                                conf: 0.90, cat: "orders" },
+  { q: "i ordered the wrong size",               a: "Cancel within 2 hours to reorder. If past that window wait for delivery and start an exchange request at flowzint.com/returns.",                                                                                                                                        conf: 0.90, cat: "orders" },
+  { q: "bulk or corporate orders",               a: "For bulk or corporate orders of 10+ items please email bulk@flowzint.com for a custom quote and priority processing.",                                                                                                                                                   conf: 0.88, cat: "orders" },
+  { q: "send an order as a gift",                a: "Yes. Enter the recipient's address as the delivery address. Add a gift note at checkout and choose gift wrapping if desired.",                                                                                                                                           conf: 0.89, cat: "orders" },
+
+  // Payments
+  { q: "what payment methods do you accept",     a: "We accept all major credit cards (Visa MasterCard Amex) UPI net banking and wallets including Paytm and PhonePe.",                                                                                                                                                     conf: 0.93, cat: "payments" },
+  { q: "cash on delivery available",             a: "Cash on delivery is available for orders under ₹5000 in eligible pin codes. Select COD at checkout to see if it's available for your address.",                                                                                                                        conf: 0.91, cat: "payments" },
+  { q: "payment failed but amount was deducted", a: "This is usually a temporary hold. If it doesn't reverse within 3–5 business days please contact us with your transaction ID and we'll escalate.",                                                                                                                      conf: 0.92, cat: "payments" },
+  { q: "how do i apply a promo code",            a: "Enter your promo code at checkout in the 'Discount code' field. Codes are case-sensitive and can only be used once per account.",                                                                                                                                       conf: 0.92, cat: "payments" },
+  { q: "promo code isn't working",               a: "Check the code is entered exactly as given (case-sensitive). Verify the expiry date and minimum cart value. Contact support if it still fails.",                                                                                                                        conf: 0.90, cat: "payments" },
+  { q: "student discount",                       a: "We offer a 10% student discount via our student verification partner. Visit flowzint.com/student to verify your status.",                                                                                                                                               conf: 0.89, cat: "payments" },
+  { q: "item went on sale after i bought it",    a: "We offer a 48-hour price-match guarantee. Contact support within 48 hours of your purchase if the price drops and we'll refund the difference.",                                                                                                                        conf: 0.90, cat: "payments" },
+
+  // Account
+  { q: "how do i reset my password",             a: "Click 'Forgot password' on the login page. A reset link will be sent to your registered email and is valid for 15 minutes.",                                                                                                                                            conf: 0.93, cat: "account" },
+  { q: "can't log into my account",              a: "Try resetting your password first. If the problem persists clear your browser cache or try a different browser. Contact support if still locked out.",                                                                                                                  conf: 0.91, cat: "account" },
+  { q: "how do i change my email address",       a: "Email changes can be made in Account Settings > Profile. For security you'll need to verify both your old and new email addresses.",                                                                                                                                    conf: 0.90, cat: "account" },
+  { q: "how do i delete my account",             a: "Account deletion requests are processed within 7 business days. Contact support to initiate the process. All data is erased per our privacy policy.",                                                                                                                   conf: 0.89, cat: "account" },
+  { q: "account hacked",                         a: "Contact support immediately. We'll lock your account, secure it, and help you recover access. Change your password on any shared devices.",                                                                                                                             conf: 0.93, cat: "account" },
+  { q: "enable two factor authentication",       a: "Go to Account Settings > Security and toggle on two-factor authentication. You can use an authenticator app or SMS verification.",                                                                                                                                      conf: 0.90, cat: "account" },
+  { q: "not receiving order confirmation emails",a: "Check your spam folder. Add support@flowzint.com to your contacts. Verify your email address in account settings.",                                                                                                                                                     conf: 0.89, cat: "account" },
+
+  // Products
+  { q: "what warranty do products come with",    a: "All products include a 1-year manufacturer warranty covering manufacturing defects. Accidental damage and normal wear are excluded.",                                                                                                                                    conf: 0.92, cat: "products" },
+  { q: "how do i claim warranty",                a: "Contact support with your order ID and a description of the issue. We'll guide you through the warranty claim process.",                                                                                                                                                conf: 0.91, cat: "products" },
+  { q: "size guide",                             a: "Our size guide is available on each product page. If you're between sizes we recommend sizing up for comfort. Contact support for personalised advice.",                                                                                                                  conf: 0.89, cat: "products" },
+  { q: "do you sell authentic products",         a: "Yes. All products are 100% authentic and sourced directly from verified brands and authorised distributors.",                                                                                                                                                           conf: 0.93, cat: "products" },
+  { q: "item is out of stock",                   a: "Click 'Notify me' on the product page to get an alert when it's restocked. We don't accept advance orders for out-of-stock items.",                                                                                                                                     conf: 0.90, cat: "products" },
+
+  // Support
+  { q: "how do i contact support",               a: "Our support team is available 24/7 via this chat or at support@flowzint.com. Average response time is under 2 hours.",                                                                                                                                                  conf: 0.93, cat: "support" },
+  { q: "can i speak to a human agent",           a: "Yes. Type 'human agent' or 'speak to manager' in this chat and you'll be connected to a live agent within 5 minutes.",                                                                                                                                                  conf: 0.93, cat: "support" },
+  { q: "app isn't loading",                      a: "Force-close the app and reopen it. If that doesn't help clear the app cache in your phone settings. Reinstall if the problem persists.",                                                                                                                                conf: 0.90, cat: "support" },
+  { q: "checkout page is freezing",              a: "This may be caused by a browser extension or slow connection. Try incognito mode or a different browser. Contact support if it persists.",                                                                                                                               conf: 0.89, cat: "support" },
+  { q: "escalate my complaint",                  a: "Type 'escalate' or 'speak to manager' in this chat and you'll be connected to a senior agent within 5 minutes. Please have your order ID ready.",                                                                                                                       conf: 0.92, cat: "support" },
+
+  // Loyalty
+  { q: "how do i earn loyalty points",           a: "You earn 10 points for every ₹100 spent. Points are credited within 48 hours of delivery confirmation.",                                                                                                                                                               conf: 0.92, cat: "loyalty" },
+  { q: "how do i redeem loyalty points",         a: "Loyalty points can be redeemed at checkout. 100 points = ₹10 discount. A minimum of 100 points is required per redemption.",                                                                                                                                           conf: 0.92, cat: "loyalty" },
+  { q: "when do loyalty points expire",          a: "Points expire 12 months after being credited. Check your points balance and expiry dates in your account dashboard.",                                                                                                                                                   conf: 0.91, cat: "loyalty" },
+  { q: "referral programme",                     a: "Share your referral link from your account dashboard. You earn ₹100 credit for each friend who completes their first order.",                                                                                                                                           conf: 0.90, cat: "loyalty" },
+
+  // ── Hinglish variants ────────────────────────────────────────────────
+  { q: "mera refund kab aayega",                 a: "Aapka refund 5–7 business days mein process ho jaata hai. Aapka bank additional 1–3 din le sakta hai. Order ID ke saath support se contact karein agar delay ho.",                                                                                                     conf: 0.92, cat: "refunds",  hinglish: true },
+  { q: "order cancel karna hai",                 a: "Order placement ke 2 ghante ke andar cancel kiya ja sakta hai. Account mein Orders section mein jaayein aur Cancel click karein. Baad mein returns process use karein.",                                                                                               conf: 0.91, cat: "orders",   hinglish: true },
+  { q: "delivery kab tak aayegi",                a: "Standard delivery 5–7 business days leti hai. Express shipping 2–3 din mein available hai checkout par additional fee par. Apna pin code enter karein availability check karne ke liye.",                                                                              conf: 0.92, cat: "shipping", hinglish: true },
+  { q: "mera order track kaise karu",            a: "flowzint.com/track par jaayein aur apna order ID enter karein. Shipment ke baad tracking link wala email bhi aata hai.",                                                                                                                                               conf: 0.92, cat: "shipping", hinglish: true },
+  { q: "payment fail ho gayi paise kat gaye",    a: "Yeh usually ek temporary hold hota hai jo 3–5 business days mein reverse ho jaata hai. Agar nahi hua toh transaction ID ke saath support se contact karein.",                                                                                                         conf: 0.91, cat: "payments", hinglish: true },
+  { q: "wrong item aaya hai",                    a: "Galat item ke liye maafi. Chat mein item ki photo share karein. Hum sahi item turant bhejengeبے bina kisi extra charge ke.",                                                                                                                                           conf: 0.92, cat: "returns",  hinglish: true },
+  { q: "size exchange karna hai",                a: "Exchange delivery ke 14 din ke andar supported hai. flowzint.com/returns par jaayein aur exchange request start karein apni replacement size ke liye.",                                                                                                                 conf: 0.91, cat: "returns",  hinglish: true },
+  { q: "app kaam nahi kar rahi",                 a: "App ko force close karke dobara kholen. Phone settings mein app cache clear karein. Agar problem rahe toh app reinstall karein ya support se contact karein.",                                                                                                         conf: 0.90, cat: "support",  hinglish: true },
+  { q: "password bhool gaya",                    a: "Login page par 'Forgot password' click karein. Reset link aapke registered email par bheja jaayega jo 15 minutes ke liye valid hoga.",                                                                                                                                conf: 0.92, cat: "account",  hinglish: true },
+  { q: "promo code apply nahi ho raha",          a: "Code exactly waise enter karein jaise diya gaya hai — yeh case-sensitive hota hai. Expiry date aur minimum cart value bhi check karein. Problem rahe toh support se contact karein.",                                                                                  conf: 0.90, cat: "payments", hinglish: true },
+  { q: "points kab milenge",                     a: "Points delivery confirmation ke 48 ghante ke andar credit ho jaate hain. Apna balance account dashboard ke Rewards section mein dekh sakte hain.",                                                                                                                     conf: 0.91, cat: "loyalty",  hinglish: true },
+  { q: "item damage aaya hai",                   a: "Bahut dukh hua! Chat mein damaged item ki photo share karein. Hum 24 ghante mein free replacement ya full refund arrange karenge.",                                                                                                                                    conf: 0.92, cat: "returns",  hinglish: true },
+  { q: "support se baat karni hai",              a: "Chat mein 'human agent' type karein aur aap 5 minute mein live agent se connect ho jayenge. Apna order ID ready rakhein.",                                                                                                                                             conf: 0.92, cat: "support",  hinglish: true },
+  { q: "cod available hai kya",                  a: "Cash on delivery ₹5000 se kam ke orders ke liye eligible pin codes mein available hai. Checkout par COD option select karein.",                                                                                                                                         conf: 0.91, cat: "payments", hinglish: true },
+  { q: "mere account mein login nahi ho raha",   a: "Pehle password reset karein. Agar problem continue ho toh browser cache clear karein ya alag browser try karein. Support 24/7 available hai.",                                                                                                                         conf: 0.91, cat: "account",  hinglish: true },
 ];
 
 // ── NLP word lists ──────────────────────────────────────────────────
-export const HINGLISH_WORDS = ["nahi", "yaar", "mera", "abhi", "karo", "hai", "hua", "bhai", "iska", "kyun", "aaya", "kab", "kuch", "dekho", "bilkul", "theek"];
-export const NEG_WORDS     = ["frustrated", "angry", "terrible", "horrible", "worst", "disappointed", "useless", "ridiculous", "third time", "unresolved", "still waiting", "never", "pathetic", "awful", "outrageous", "unacceptable", "disgusting", "furious", "incompetent"];
-export const POS_WORDS     = ["thank", "great", "excellent", "perfect", "wonderful", "happy", "love", "awesome", "fast", "resolved", "helpful", "amazing", "appreciate", "good"];
-export const ESCALATE_TRIGGERS = ["third time", "never resolved", "unacceptable", "speak to manager", "this is a joke", "three times", "demanding refund", "legal action", "consumer forum", "chargeback"];
-export const HINGLISH_NEG  = ["nahi aaya", "problem hai", "kab aayega", "kuch nahi hua", "abhi tak nahi"];
+export const HINGLISH_WORDS  = ["nahi", "yaar", "mera", "abhi", "karo", "hai", "hua", "bhai", "iska", "kyun", "aaya", "kab", "kuch", "dekho", "bilkul", "theek", "karna", "kaise", "jaayein", "milenge", "aayega", "chahiye"];
+export const NEG_WORDS       = ["frustrated", "angry", "terrible", "horrible", "worst", "disappointed", "useless", "ridiculous", "third time", "unresolved", "still waiting", "never", "pathetic", "awful", "outrageous", "unacceptable", "disgusting", "furious", "incompetent", "rubbish", "trash", "waste", "scam", "fraud", "cheated", "lied"];
+export const POS_WORDS       = ["thank", "great", "excellent", "perfect", "wonderful", "happy", "love", "awesome", "fast", "resolved", "helpful", "amazing", "appreciate", "good", "fantastic", "brilliant", "superb", "outstanding"];
+export const ESCALATE_TRIGGERS = ["third time", "never resolved", "unacceptable", "speak to manager", "this is a joke", "three times", "demanding refund", "legal action", "consumer forum", "chargeback", "escalate", "senior agent", "file complaint", "police complaint", "social media", "fourth time", "fifth time"];
+export const HINGLISH_NEG    = ["nahi aaya", "problem hai", "kab aayega", "kuch nahi hua", "abhi tak nahi", "bahut bura", "naraaz", "pareshaan"];
 
 // ── Quick demo messages ─────────────────────────────────────────────
 export const QUICK_MSGS = [
   { label: "Refund policy",  text: "What is your refund policy?" },
   { label: "Track order",    text: "How do I track my shipment?" },
-  { label: "Angry",          text: "My order hasn't arrived and I'm really frustrated!" },
-  { label: "Escalation",     text: "This is the third time my issue hasn't been resolved!" },
-  { label: "Hinglish",       text: "Mera order abhi tak nahi aaya yaar" },
-  { label: "Unknown",        text: "Can I change my delivery address after ordering?" },
+  { label: "Frustrated",     text: "I'm really frustrated — my order still hasn't arrived after 12 days!" },
+  { label: "Escalation",     text: "This is the third time my issue hasn't been resolved. I want to speak to a manager!" },
+  { label: "Hinglish",       text: "Mera order abhi tak nahi aaya yaar, kab aayega?" },
+  { label: "Unknown Q",      text: "Can I get a same-day delivery option?" },
+  { label: "Damaged item",   text: "I received a completely damaged product. This is unacceptable." },
+  { label: "Warranty",       text: "My product stopped working after 3 months. What is covered under warranty?" },
 ];
 
 // ── Seed data for dashboard & tickets ──────────────────────────────
 export const INIT_TICKETS = [
-  { id: "#1042", customer: "Rahul M.",  issue: "Order not delivered after 12 days",  pri: "high", status: "escalated", trigger: "Drift detection",        ts: "09:14" },
-  { id: "#1039", customer: "Sneha P.",  issue: "Wrong item shipped",                 pri: "high", status: "open",      trigger: "Frustration keywords",   ts: "10:32" },
-  { id: "#1035", customer: "Arjun K.",  issue: "Refund not processed in 10 days",    pri: "med",  status: "open",      trigger: "Auto-ticket",             ts: "11:05" },
-  { id: "#1031", customer: "Divya R.",  issue: "App login issue – can't access acct",pri: "low",  status: "resolved",  trigger: "Auto-ticket",             ts: "08:47" },
+  { id: "#1042", customer: "Rahul M.",  issue: "Order not delivered after 12 days",       pri: "high", status: "escalated", trigger: "Drift detection",        ts: "09:14" },
+  { id: "#1039", customer: "Sneha P.",  issue: "Wrong item shipped, 3rd complaint",        pri: "high", status: "open",      trigger: "Frustration keywords",   ts: "10:32" },
+  { id: "#1035", customer: "Arjun K.",  issue: "Refund not processed in 10 days",          pri: "med",  status: "open",      trigger: "Auto-ticket",            ts: "11:05" },
+  { id: "#1031", customer: "Divya R.",  issue: "App login issue — can't access account",   pri: "low",  status: "resolved",  trigger: "Auto-ticket",            ts: "08:47" },
+  { id: "#1028", customer: "Karan V.",  issue: "Payment debited twice for same order",     pri: "high", status: "open",      trigger: "Frustration keywords",   ts: "08:12" },
+  { id: "#1024", customer: "Priya K.",  issue: "Delivery address not updated before ship", pri: "med",  status: "open",      trigger: "Auto-ticket",            ts: "07:55" },
 ];
 
 export const CLUSTERS = [
-  { label: "Delivery delays",        count: 47, pct: 0.85 },
-  { label: "Refund not processed",   count: 31, pct: 0.56 },
-  { label: "Wrong item received",    count: 18, pct: 0.33 },
-  { label: "App login issues",       count: 12, pct: 0.22 },
+  { label: "Delivery delays & missing parcels", count: 47, pct: 0.85 },
+  { label: "Refund not credited to account",    count: 31, pct: 0.56 },
+  { label: "Wrong or damaged item received",    count: 18, pct: 0.33 },
+  { label: "Payment failures & COD issues",     count: 12, pct: 0.22 },
 ];
 
 export const CHURN_RISKS = [
-  { name: "Rahul M.",  risk: "high", driver: "3 unresolved tickets",          action: "Priority escalation to senior agent"   },
-  { name: "Priya K.",  risk: "high", driver: "Sustained negative sentiment",  action: "Personalized discount offer"           },
-  { name: "Amit S.",   risk: "med",  driver: "Extended inactivity (8 days)",  action: "Re-engagement campaign"               },
-  { name: "Nisha R.",  risk: "med",  driver: "2 escalations this week",       action: "Assign dedicated account manager"     },
+  { name: "Rahul M.",  risk: "high", driver: "3 unresolved tickets",          action: "Priority escalation to senior agent"    },
+  { name: "Priya K.",  risk: "high", driver: "Sustained negative sentiment",  action: "Personalised discount offer — ₹200"    },
+  { name: "Karan V.",  risk: "high", driver: "2 escalations + no resolution", action: "Assign dedicated account manager"       },
+  { name: "Amit S.",   risk: "med",  driver: "Extended inactivity (8 days)",  action: "Re-engagement campaign with offer"      },
+  { name: "Nisha R.",  risk: "med",  driver: "2 escalations this week",       action: "Assign dedicated account manager"       },
+  { name: "Deepa T.",  risk: "low",  driver: "Single negative interaction",   action: "Proactive outreach within 24 hours"     },
 ];
 
-// Hourly sentiment seed for sparkline (8 hrs × 3 categories)
+// Hourly sentiment seed for sparkline (10 hrs — 8am to 5pm)
 export const HOURLY_SENTIMENT = [
+  { hour: "8am",  pos: 8,  neu: 15, neg: 3  },
   { hour: "9am",  pos: 12, neu: 20, neg: 8  },
   { hour: "10am", pos: 18, neu: 22, neg: 6  },
   { hour: "11am", pos: 15, neu: 25, neg: 10 },
   { hour: "12pm", pos: 22, neu: 18, neg: 5  },
   { hour: "1pm",  pos: 19, neu: 24, neg: 7  },
   { hour: "2pm",  pos: 25, neu: 20, neg: 4  },
-  { hour: "3pm",  pos: 21, neu: 23, neg: 6  },
+  { hour: "3pm",  pos: 21, neu: 23, neg: 9  },
   { hour: "4pm",  pos: 28, neu: 19, neg: 3  },
+  { hour: "5pm",  pos: 24, neu: 21, neg: 6  },
 ];

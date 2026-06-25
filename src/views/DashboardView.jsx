@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { MetricCard, Panel, Badge } from "../components/ui";
 import { CLUSTERS, CHURN_RISKS, HOURLY_SENTIMENT } from "../data/constants";
 
-function SentimentSparkline() {
+function SentimentSparkline({ data }) {
   const canvasRef = useRef(null);
   useEffect(() => {
     let tid;
@@ -12,28 +12,28 @@ function SentimentSparkline() {
       if (!window.Chart) { tid = setTimeout(tryDraw, 200); return; }
       if (el._chart) el._chart.destroy();
       el._chart = new window.Chart(el, {
-      type: "line",
-      data: {
-        labels: HOURLY_SENTIMENT.map(h => h.hour),
-        datasets: [
-          { label: "Positive", data: HOURLY_SENTIMENT.map(h => h.pos), borderColor: "#1D9E75", backgroundColor: "rgba(29,158,117,0.07)", fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2 },
-          { label: "Neutral",  data: HOURLY_SENTIMENT.map(h => h.neu), borderColor: "#534AB7", backgroundColor: "rgba(83,74,183,0.05)",  fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2 },
-          { label: "Negative", data: HOURLY_SENTIMENT.map(h => h.neg), borderColor: "#E24B4A", backgroundColor: "rgba(226,75,74,0.06)",  fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2 },
-        ],
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-          y: { grid: { color: "rgba(128,128,128,0.08)" }, ticks: { font: { size: 11 } } },
+        type: "line",
+        data: {
+          labels: data.map(h => h.hour),
+          datasets: [
+            { label: "Positive", data: data.map(h => h.pos), borderColor: "#1D9E75", backgroundColor: "rgba(29,158,117,0.07)", fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2 },
+            { label: "Neutral",  data: data.map(h => h.neu), borderColor: "#534AB7", backgroundColor: "rgba(83,74,183,0.05)",  fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2 },
+            { label: "Negative", data: data.map(h => h.neg), borderColor: "#E24B4A", backgroundColor: "rgba(226,75,74,0.06)",  fill: true, tension: 0.4, pointRadius: 3, borderWidth: 2 },
+          ],
         },
-      }
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+            y: { grid: { color: "rgba(128,128,128,0.08)" }, ticks: { font: { size: 11 } } },
+          },
+        }
       });
     };
     tryDraw();
     return () => clearTimeout(tid);
-  }, []);
+  }, [data]);
   return (
     <div style={{ position: "relative", height: 160 }}>
       <canvas ref={canvasRef} role="img" aria-label="Hourly sentiment trend" />
@@ -42,9 +42,10 @@ function SentimentSparkline() {
 }
 
 export function DashboardView({ stats, selfCorrected, tickets }) {
-  const [apiClusters, setApiClusters]   = useState(null);
-  const [apiChurnList, setApiChurnList] = useState(null);
-  const [pendingKB, setPendingKB]       = useState(null);
+  const [apiClusters, setApiClusters]       = useState(null);
+  const [apiChurnList, setApiChurnList]     = useState(null);
+  const [pendingKB, setPendingKB]           = useState(null);
+  const [liveSentiment, setLiveSentiment]   = useState(null);
 
   // Fetch live data from backend; fall back to seed constants on error
   useEffect(() => {
@@ -61,6 +62,11 @@ export function DashboardView({ stats, selfCorrected, tickets }) {
     fetch("/api/admin/pending-reviews")
       .then(r => (r.ok ? r.json() : null))
       .then(data => { if (data && Array.isArray(data)) setPendingKB(data); })
+      .catch(() => {});
+
+    fetch("/api/analytics/sentiment-trend")
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => { if (data && Array.isArray(data) && data.length > 0) setLiveSentiment(data); })
       .catch(() => {});
   }, []);
 
@@ -87,6 +93,7 @@ export function DashboardView({ stats, selfCorrected, tickets }) {
       return acc;
     }, []);
 
+  const sentimentData = liveSentiment || HOURLY_SENTIMENT;
   const churnList     = apiChurnList || CHURN_RISKS;
   const allChurnRisks = [...liveChurn, ...churnList];
 
@@ -169,7 +176,7 @@ export function DashboardView({ stats, selfCorrected, tickets }) {
             ))}
           </div>
         </div>
-        <SentimentSparkline />
+        <SentimentSparkline data={sentimentData} />
       </Panel>
 
       {/* Self-corrected KB — merges API pending reviews + local state */}

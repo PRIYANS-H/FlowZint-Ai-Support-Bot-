@@ -176,6 +176,13 @@ export function useChat() {
     pushToast("✓ Knowledge base updated", "success");
   }, [correctionInput, lastUserMsg, pushToast]);
 
+  // ── Resolve a ticket locally ─────────────────────────────────────
+  const resolveTicket = useCallback((ticketId) => {
+    setTickets(prev => prev.map(t =>
+      t.id === ticketId ? { ...t, status: "resolved" } : t
+    ));
+  }, []);
+
   // ── Reset session ─────────────────────────────────────────────────
   const resetSession = useCallback(() => {
     setMessages(INIT_MESSAGES);
@@ -199,5 +206,6 @@ export function useChat() {
     drift, lastConf, tickets, selfCorrected,
     showCorrection, correctionInput, setCorrectionInput,
     toasts, send, submitCorrection, messagesRef, stats, resetSession,
+    resolveTicket,
   };
 }
