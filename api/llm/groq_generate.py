@@ -1,31 +1,16 @@
 """
 api/llm/groq_generate.py
 
-Groq LLM integration — used when RAG retrieval confidence is insufficient.
-Model: llama-3.1-8b-instant (fastest, free tier, ~200 tokens/s)
-
-Three modes:
-  1. conf >= 0.70  → return FAQ answer directly (no LLM call, instant)
-  2. conf 0.40–0.70 → LLM generates answer GROUNDED in the retrieved FAQ context
-  3. conf < 0.40   → LLM generates freely from system prompt + flags for review
-
-This is what makes Flowzint an "AI copilot" not just a search system.
+Calls Groq REST API directly (no SDK) to avoid httpx connection issues in
+Vercel's Python Lambda environment. Uses the requests library which works
+reliably for outbound HTTPS in serverless.
 """
-import os
+import os, requests
 from dotenv import load_dotenv
-from groq import Groq
 
 load_dotenv()
 
-_client: Groq | None = None
-
-def _get_client() -> Groq:
-    global _client
-    if _client is None:
-        _client = Groq(api_key=os.environ["GROQ_API_KEY"])
-    assert _client is not None
-    return _client
-
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 SYSTEM_PROMPT = """You are Flowzint, an AI customer support assistant for an Indian
 e-commerce platform. You are helpful, concise, and professional.
@@ -45,22 +30,11 @@ def generate_answer(
     sentiment: str = "neutral",
     hinglish: bool = False,
 ) -> dict:
-    """
-    Generate a response using Groq LLM.
-
-    Args:
-        query:       The customer's message
-        faq_context: Best-matching FAQ answer from pgvector (may be None)
-        sentiment:   Current sentiment — used to soften tone if negative
-        hinglish:    If True, acknowledge in Hinglish style
-
-    Returns:
-        { answer: str, groq_used: True, conf: float }
-    """
     try:
-        client = _get_client()
+        key = os.environ.get("GROQ_API_KEY", "")
+        if not key:
+            raise ValueError("GROQ_API_KEY not set")
 
-        # Build user message with optional FAQ context
         if faq_context:
             user_msg = (
                 f"Customer query: {query}\n\n"
@@ -75,29 +49,32 @@ def generate_answer(
                 "acknowledge the issue and say a support agent will follow up."
             )
 
-        # Add tone guidance for frustrated customers
         if sentiment == "negative":
             user_msg += "\n\nNote: The customer seems frustrated. Acknowledge their concern warmly before answering."
 
-        response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user",   "content": user_msg},
-            ],
-            max_tokens=150,
-            temperature=0.3,      # low temp = more consistent, professional answers
+        resp = requests.post(
+            GROQ_URL,
+            headers={
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": "llama-3.1-8b-instant",
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user",   "content": user_msg},
+                ],
+                "max_tokens": 150,
+                "temperature": 0.3,
+            },
+            timeout=15,
         )
-
-        answer = response.choices[0].message.content.strip()
-
-        # Confidence depends on whether we had FAQ context to ground the answer
+        resp.raise_for_status()
+        answer = resp.json()["choices"][0]["message"]["content"].strip()
         conf = 0.75 if faq_context else 0.55
-
         return {"answer": answer, "groq_used": True, "conf": conf}
 
-    except Exception as e:
-        # Never let LLM failure break the chat — return a safe fallback
+    except Exception:
         return {
             "answer": "I'm looking into this for you. Please hold on while I connect you with a support agent who can help.",
             "groq_used": False,

@@ -301,6 +301,7 @@ def health(db: Session = Depends(get_db)):
             db_ok = True
         except Exception as e:
             db_err = str(e)
+
     return {"status": "ok", "db": db_ok, "db_err": db_err}
 
 
