@@ -12,14 +12,18 @@ Three modes:
 This is what makes Flowzint an "AI copilot" not just a search system.
 """
 import os
+from dotenv import load_dotenv
 from groq import Groq
 
-_client = None
+load_dotenv()
+
+_client: Groq | None = None
 
 def _get_client() -> Groq:
     global _client
     if _client is None:
         _client = Groq(api_key=os.environ["GROQ_API_KEY"])
+    assert _client is not None
     return _client
 
 

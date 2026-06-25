@@ -28,6 +28,7 @@ function SentimentSparkline() {
           x: { grid: { display: false }, ticks: { font: { size: 11 } } },
           y: { grid: { color: "rgba(128,128,128,0.08)" }, ticks: { font: { size: 11 } } },
         },
+      }
       });
     };
     tryDraw();

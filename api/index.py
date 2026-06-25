@@ -1,4 +1,8 @@
 import sys, os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Ensure local modules are importable when running as Vercel Lambda
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
