@@ -1,0 +1,76 @@
+question,answer,category
+What is your refund policy?,Our refund policy allows returns within 30 days of purchase. You'll receive a full refund to your original payment method within 5–7 business days once we receive the item.,refunds
+How do I return an item?,Visit our returns portal at flowzint.com/returns and enter your order ID. Select the item and reason then schedule a pickup or drop-off.,returns
+Can I return a sale item?,Sale items can be returned within 14 days. Final-sale items marked at checkout are non-returnable.,returns
+How long does my refund take?,Refunds are processed within 5–7 business days after we receive your return. Your bank may take an additional 1–3 days to reflect the credit.,refunds
+Can I get a refund without a receipt?,Yes. If you have your order ID or the email used to place the order we can look up your purchase and process the refund.,refunds
+What if my refund hasn't arrived after 10 days?,Please contact support with your order ID. We'll investigate with our payments team and resolve it within 24 hours.,refunds
+How do I track my shipment?,Visit flowzint.com/track and enter your order ID. You'll also receive an email with a tracking link once your order ships.,shipping
+How long does standard delivery take?,Standard delivery takes 5–7 business days. Express shipping (2–3 days) is available at checkout for an additional fee.,shipping
+Is express shipping available?,Yes. Express shipping (2–3 business days) is available for most pin codes. Select it at checkout before placing your order.,shipping
+Can I change my delivery address after ordering?,Address changes are possible within 2 hours of order placement. After that the order is dispatched and changes cannot be made.,orders
+My order shows delivered but I didn't receive it.,Please check with neighbours and building reception first. If still not found contact us within 48 hours and we'll investigate and reship or refund.,shipping
+What happens if no one is home during delivery?,The courier will attempt delivery twice. After two failed attempts the package is held at a local hub for 5 days before being returned.,shipping
+How do I cancel my order?,Orders can be cancelled within 2 hours of placement. After that please wait for delivery and use our standard returns process.,orders
+Can I modify my order after placing it?,Item changes are not possible after an order is confirmed. You can cancel within 2 hours and place a new order with the correct items.,orders
+I ordered the wrong size. What should I do?,Cancel within 2 hours to reorder. If past that window wait for delivery and start an exchange request at flowzint.com/returns.,orders
+What payment methods do you accept?,We accept all major credit cards (Visa MasterCard Amex) UPI net banking and wallets including Paytm and PhonePe.,payments
+Is payment on delivery available?,Cash on delivery is available for orders under ₹5000 in eligible pin codes. Select COD at checkout to see if it's available for your address.,payments
+Is it safe to enter my card details?,Yes. Payments are processed via PCI-DSS compliant gateways. We never store your full card number on our servers.,payments
+My payment failed but amount was deducted.,This is usually a temporary hold. If it doesn't reverse within 3–5 business days please contact us with your transaction ID and we'll escalate.,payments
+How do I apply a promo code?,Enter your promo code at checkout in the 'Discount code' field. Codes are case-sensitive and can only be used once per account.,payments
+My promo code isn't working.,Check the code is entered exactly as given (case-sensitive). Verify the expiry date and minimum cart value. Contact support if it still fails.,payments
+How do I contact support?,Our support team is available 24/7 via this chat or at support@flowzint.com. Average response time is under 2 hours.,support
+What are your support hours?,Live chat is available 24/7. Email support is monitored around the clock with responses within 2 hours on business days.,support
+Can I speak to a human agent?,Yes. Type 'human agent' or 'speak to manager' in this chat and you'll be connected to a live agent within 5 minutes.,support
+How do I reset my account password?,Click 'Forgot password' on the login page. A reset link will be sent to your registered email and is valid for 15 minutes.,account
+How do I change my email address?,Email changes can be made in Account Settings > Profile. For security you'll need to verify both your old and new email addresses.,account
+How do I delete my account?,Account deletion requests are processed within 7 business days. Contact support to initiate the process. All data is erased per our privacy policy.,account
+I can't log into my account.,Try resetting your password first. If the problem persists clear your browser cache or try a different browser. Contact support if still locked out.,account
+How do I update my phone number?,Update your phone number in Account Settings > Profile. A one-time password will be sent to the new number to verify it.,account
+Do you offer an exchange?,Exchanges are supported within 14 days of delivery. Visit our returns portal to start an exchange request and select your replacement size or item.,returns
+Can I exchange for a different product?,Cross-product exchanges are possible as long as the value is equal. If the new item costs more you'll pay the difference.,returns
+What is your size guide?,Our size guide is available on each product page. If you're between sizes we recommend sizing up for comfort. Still unsure? Contact support.,products
+The item I received looks different from the photo.,We're sorry. Please share a photo via chat. If it's a genuine difference we'll arrange a free replacement or full refund within 24 hours.,returns
+I received a damaged item.,We're sorry to hear that! Share a photo of the damaged item via chat and we'll arrange a free replacement or full refund within 24 hours.,returns
+I received the wrong item.,Apologies for the mix-up. Please share a photo of the wrong item via chat. We'll dispatch the correct item immediately at no extra cost.,returns
+How do I earn loyalty points?,You earn 10 points for every ₹100 spent. Points are credited within 48 hours of delivery confirmation.,loyalty
+How do I redeem loyalty points?,Loyalty points can be redeemed at checkout. 100 points = ₹10 discount. A minimum of 100 points is required per redemption.,loyalty
+When do my loyalty points expire?,Points expire 12 months after being credited. Check your points balance and expiry dates in your account dashboard.,loyalty
+Can I transfer my loyalty points?,Loyalty points are non-transferable and tied to your account.,loyalty
+How do I check my points balance?,Your points balance is visible in your account dashboard under the 'Rewards' section.,loyalty
+Do you offer bulk or corporate orders?,For bulk or corporate orders of 10+ items please email bulk@flowzint.com for a custom quote and priority processing.,orders
+What is the minimum for a bulk order?,Bulk pricing applies to orders of 10 or more units of the same product. Contact bulk@flowzint.com for a custom quote.,orders
+Do you ship internationally?,We ship to 45+ countries. International delivery takes 10–15 business days. Customs duties may apply depending on your destination.,shipping
+What countries do you ship to?,We ship to over 45 countries across Asia Europe and North America. Enter your address at checkout to confirm availability.,shipping
+Do I have to pay customs duties?,Customs duties and taxes are the buyer's responsibility and vary by country. We display estimated duties at checkout where possible.,shipping
+What warranty do products come with?,All products include a 1-year manufacturer warranty covering manufacturing defects. Accidental damage and normal wear are excluded.,products
+How do I claim warranty?,Contact support with your order ID and a description of the issue. We'll guide you through the warranty claim process.,products
+Is warranty transferable?,Warranty is valid only for the original purchaser and is not transferable if the product is resold or gifted.,products
+The app isn't loading.,Force-close the app and reopen it. If that doesn't help clear the app cache in your phone settings. Reinstall if the problem persists.,support
+I can't add items to my cart.,Try clearing your browser cache or using a different browser. Ensure JavaScript is enabled. Contact support if the issue continues.,support
+The checkout page is freezing.,This may be caused by a browser extension or slow connection. Try incognito mode or a different browser. Contact support if it persists.,support
+I'm not receiving order confirmation emails.,Check your spam folder. Add support@flowzint.com to your contacts. Verify your email address in account settings.,account
+How do I unsubscribe from marketing emails?,Click 'Unsubscribe' at the bottom of any marketing email or go to Account Settings > Notifications to manage your preferences.,account
+How do I subscribe to restock alerts?,Go to the product page of an out-of-stock item and click 'Notify me'. You'll get an email when it's back.,products
+Is this product available in other colours?,Available variants (colours and sizes) are shown on the product page. If your preferred option isn't listed it's currently out of stock.,products
+Can I request a product that's out of stock?,Click 'Notify me' on the product page to get an alert when it's restocked. We don't accept advance orders for out-of-stock items.,products
+Do you offer student discounts?,We offer a 10% student discount via our student verification partner. Visit flowzint.com/student to verify your status.,payments
+Do you have a referral programme?,Yes. Share your referral link from your account dashboard. You earn ₹100 credit for each friend who completes their first order.,loyalty
+How does the referral programme work?,Share your unique referral link. When a friend signs up and places their first order you receive ₹100 account credit within 7 days.,loyalty
+Can I use multiple discount codes?,Only one discount code can be applied per order. Discount codes cannot be combined with loyalty point redemptions.,payments
+Do you offer gift wrapping?,Gift wrapping is available for ₹49 per item. Select it at the product or checkout page and add a personalised message.,products
+Can I send an order as a gift?,Yes. Enter the recipient's address as the delivery address. Add a gift note at checkout and choose gift wrapping if desired.,orders
+Do you include an invoice in the package?,A digital invoice is emailed to you. Physical invoices are not included in packages to maintain privacy for gift orders.,orders
+What is your privacy policy?,We never sell your personal data. Your data is processed per our privacy policy at flowzint.com/privacy. Contact support for data requests.,account
+How is my data used?,Your data is used to process orders personalise your experience and improve our service. We never sell your data to third parties.,account
+Do you sell authentic products?,Yes. All products are 100% authentic and sourced directly from verified brands and authorised distributors.,products
+What if I suspect a counterfeit product?,Contact support immediately with photos. We take authenticity seriously and will investigate and replace or refund within 24 hours.,products
+How do I leave a product review?,You can leave a review on the product page within 30 days of delivery. You must have purchased the product to leave a verified review.,products
+Can I change or delete my review?,Yes. Visit the product page or your account's Order History to edit or delete your review within 60 days of posting.,products
+What if an item goes on sale after I buy it?,We offer a 48-hour price-match guarantee. Contact support within 48 hours of your purchase if the price drops and we'll refund the difference.,payments
+How do I use the wishlist?,Click the heart icon on any product to save it to your wishlist. Access your wishlist from your account dashboard.,products
+Can I share my wishlist?,Your wishlist can be shared via a link. Go to your wishlist in your account and click 'Share wishlist' to generate a shareable URL.,products
+How do I report a problem with an order?,Contact support via chat or email with your order ID and a description of the issue. Attach photos if relevant for faster resolution.,support
+What should I do if my account is hacked?,Contact support immediately. We'll lock your account secure it and help you recover access. Change your password on any shared devices.,account
+How do I enable two-factor authentication?,Go to Account Settings > Security and toggle on two-factor authentication. You can use an authenticator app or SMS verification.,account
