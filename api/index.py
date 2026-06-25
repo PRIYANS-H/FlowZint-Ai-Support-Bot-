@@ -82,27 +82,23 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)):
     hinglish    = sent_result["hinglish"]
     escalate    = sent_result["escalate"]
 
-    # 2. Persist user message
+    # 2 & 3. Persist user message + sentiment log
+    _db_ok = False
     if db:
-        user_msg = DBMessage(
-            session_id = req.session_id,
-            role       = "user",
-            text       = text_in,
-            sentiment  = sentiment,
-        )
-        db.add(user_msg)
-
-    # 3. Log sentiment for drift tracking
-    if db:
-        sl = SentimentLog(session_id=req.session_id, sentiment=sentiment, score=sent_result.get("conf_sent", 0.65))
-        db.add(sl)
-        db.commit()
+        try:
+            db.add(DBMessage(session_id=req.session_id, role="user", text=text_in, sentiment=sentiment))
+            db.add(SentimentLog(session_id=req.session_id, sentiment=sentiment, score=sent_result.get("conf_sent", 0.65)))
+            db.commit()
+            _db_ok = True
+        except Exception:
+            try: db.rollback()
+            except Exception: pass
 
     # 4. Compute drift from full session history
-    drift = get_session_drift(req.session_id, db) if db else {"trend": "stable", "score": 0.5, "label": "Stable", "color": "#534AB7"}
+    drift = get_session_drift(req.session_id, db) if _db_ok else {"trend": "stable", "score": 0.5, "label": "Stable", "color": "#534AB7"}
 
     # 5. RAG retrieval
-    if db:
+    if _db_ok:
         try:
             rag = retrieve_faq(text_in, db)
         except Exception:
@@ -137,7 +133,7 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)):
     create_tkt, trigger   = should_create_ticket(sentiment, drift, escalate, conf)
     ticket_id             = None
 
-    if create_tkt and db:
+    if create_tkt and _db_ok:
         tkt_data = create_ticket(
             session_id = req.session_id,
             customer   = req.customer,
@@ -154,27 +150,16 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)):
     if fallback:
         answer = None
 
-    # 9. Persist bot message
-    if db:
-        bot_msg = DBMessage(
-            session_id = req.session_id,
-            role       = "bot",
-            text       = answer or "",
-            sentiment  = "neutral",
-            cat        = cat,
-            conf       = conf,
-            escalated  = create_tkt and priority == "high",
-        )
-        db.add(bot_msg)
-
-    # 10. Update churn score in background (non-blocking)
-    if db:
+    # 9 & 10. Persist bot message + churn score
+    if _db_ok:
         try:
-            predict_churn(req.session_id, req.customer, db)
+            db.add(DBMessage(session_id=req.session_id, role="bot", text=answer or "", sentiment="neutral", cat=cat, conf=conf, escalated=create_tkt and priority == "high"))
+            try: predict_churn(req.session_id, req.customer, db)
+            except Exception: pass
+            db.commit()
         except Exception:
-            pass
-
-        db.commit()
+            try: db.rollback()
+            except Exception: pass
 
     return ChatResponse(
         answer         = answer,
