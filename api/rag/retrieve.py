@@ -6,6 +6,11 @@ HF_TOKEN  = os.environ.get("HF_TOKEN", "")
 EMBED_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
 HEADERS   = {"Authorization": f"Bearer {HF_TOKEN}", "Content-Type": "application/json"}
 
+_STOP = {"i","a","an","the","is","it","my","me","to","do","want","in","on","at",
+         "for","of","and","or","with","how","what","when","why","can","will",
+         "be","have","has","get","this","that","we","you","your","our","us",
+         "not","no","am","are","was","were","been","got","did","need","please"}
+
 
 def embed_query(query: str) -> list[float]:
     resp = requests.post(EMBED_URL, headers=HEADERS, json={"inputs": query, "options": {"wait_for_model": True}}, timeout=10)
@@ -14,34 +19,37 @@ def embed_query(query: str) -> list[float]:
     return result[0] if isinstance(result[0], list) else result
 
 
-def _fts_fallback(query: str, db: Session) -> dict:
-    """PostgreSQL full-text search when HF embedding API is unreachable."""
+def _keyword_search(query: str, db: Session) -> dict:
+    """Word-overlap FAQ search — works without any embedding API."""
     try:
-        row = db.execute(text("""
-            SELECT question, answer, category,
-                   ts_rank(
-                       to_tsvector('english', question || ' ' || answer),
-                       plainto_tsquery('english', :q)
-                   ) AS rank
-            FROM faqs
-            WHERE to_tsvector('english', question || ' ' || answer)
-                  @@ plainto_tsquery('english', :q)
-            ORDER BY rank DESC
-            LIMIT 1
-        """), {"q": query}).fetchone()
-
-        if row and row.rank > 0:
-            return {"answer": row.answer, "conf": 0.62, "cat": row.category, "self_corrected": False}
+        rows = db.execute(text("SELECT question, answer, category FROM faqs")).fetchall()
     except Exception:
-        pass
+        return {"answer": None, "conf": 0.18, "cat": "unknown", "self_corrected": False}
+
+    q_words = {w for w in query.lower().split() if len(w) > 2 and w not in _STOP}
+    if not q_words:
+        return {"answer": None, "conf": 0.18, "cat": "unknown", "self_corrected": False}
+
+    best_score, best_row = 0.0, None
+    for row in rows:
+        faq_words = {w for w in (row.question + " " + row.answer).lower().split()
+                     if len(w) > 2 and w not in _STOP}
+        if not faq_words:
+            continue
+        overlap = len(q_words & faq_words) / len(q_words | faq_words)
+        if overlap > best_score:
+            best_score, best_row = overlap, row
+
+    if best_row and best_score >= 0.10:
+        conf = round(min(0.88, 0.50 + best_score * 1.5), 4)
+        return {"answer": best_row.answer, "conf": conf, "cat": best_row.category, "self_corrected": False}
     return {"answer": None, "conf": 0.18, "cat": "unknown", "self_corrected": False}
 
 
 def retrieve_faq(query: str, db: Session) -> dict:
     """
     Returns: { answer, conf, cat, self_corrected }
-    Searches self_corrections first (conf=0.97 override), then faqs.
-    Falls back to PostgreSQL full-text search if HF embedding API is unavailable.
+    Tries HF vector search first; falls back to word-overlap keyword search.
     """
     try:
         emb     = embed_query(query)
@@ -75,5 +83,5 @@ def retrieve_faq(query: str, db: Session) -> dict:
         return {"answer": None, "conf": 0.18, "cat": "unknown", "self_corrected": False}
 
     except Exception:
-        # HF API unreachable — fall back to full-text search
-        return _fts_fallback(query, db)
+        # HF embed API unreachable on Vercel — use keyword overlap instead
+        return _keyword_search(query, db)
