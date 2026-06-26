@@ -12,6 +12,11 @@ _STOP = {"i","a","an","the","is","it","my","me","to","do","want","in","on","at",
          "not","no","am","are","was","were","been","got","did","need","please"}
 
 
+def _stems(words: set) -> set:
+    """Crude 5-char stem so 'damaged'/'damage', 'refund'/'refunds' match."""
+    return {w[:5] for w in words}
+
+
 def embed_query(query: str) -> list[float]:
     resp = requests.post(EMBED_URL, headers=HEADERS, json={"inputs": query, "options": {"wait_for_model": True}}, timeout=10)
     resp.raise_for_status()
@@ -20,7 +25,11 @@ def embed_query(query: str) -> list[float]:
 
 
 def _keyword_search(query: str, db: Session) -> dict:
-    """Word-overlap FAQ search — works without any embedding API."""
+    """
+    Score = fraction of query keyword stems found in the FAQ question.
+    Uses only the question (not the long answer) as the search target so
+    the denominator stays small and scores are meaningful.
+    """
     try:
         rows = db.execute(text("SELECT question, answer, category FROM faqs")).fetchall()
     except Exception:
@@ -30,18 +39,19 @@ def _keyword_search(query: str, db: Session) -> dict:
     if not q_words:
         return {"answer": None, "conf": 0.18, "cat": "unknown", "self_corrected": False}
 
+    q_stems = _stems(q_words)
+
     best_score, best_row = 0.0, None
     for row in rows:
-        faq_words = {w for w in (row.question + " " + row.answer).lower().split()
-                     if len(w) > 2 and w not in _STOP}
-        if not faq_words:
-            continue
-        overlap = len(q_words & faq_words) / len(q_words | faq_words)
-        if overlap > best_score:
-            best_score, best_row = overlap, row
+        faq_q_words = {w for w in row.question.lower().split() if len(w) > 2 and w not in _STOP}
+        faq_stems   = _stems(faq_q_words)
+        # Recall: what fraction of my query stems appear in the FAQ question?
+        score = len(q_stems & faq_stems) / len(q_stems)
+        if score > best_score:
+            best_score, best_row = score, row
 
-    if best_row and best_score >= 0.10:
-        conf = round(min(0.88, 0.50 + best_score * 1.5), 4)
+    if best_row and best_score >= 0.30:
+        conf = round(min(0.88, 0.55 + best_score * 0.40), 4)
         return {"answer": best_row.answer, "conf": conf, "cat": best_row.category, "self_corrected": False}
     return {"answer": None, "conf": 0.18, "cat": "unknown", "self_corrected": False}
 
