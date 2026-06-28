@@ -23,6 +23,6 @@ def should_create_ticket(sentiment: str, drift: dict, escalate: bool, conf: floa
         return True, "Drift detection"
     if sentiment == "negative" and drift.get("trend") == "degrading":
         return True, "Sustained negative sentiment"
-    if conf < 0.30:
+    if conf < 0.45:
         return True, "Auto-ticket"
     return False, ""

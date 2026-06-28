@@ -58,26 +58,78 @@ export function ChatBubble({ msg }) {
   const isBot = msg.role === "bot";
   const m     = msg.meta || {};
 
-  const bubbleBg    = !isBot ? COLORS.purple.solid : m.fallback ? COLORS.red.bg : m.escalated ? COLORS.amber.bg : "var(--color-background-secondary)";
+  const bubbleBg    = !isBot ? COLORS.purple.solid : m.isSummary ? "#EAF3DE" : m.fallback ? COLORS.red.bg : m.escalated ? COLORS.amber.bg : m.collectingDetails ? "#FFF8EC" : "var(--color-background-secondary)";
   const bubbleColor = !isBot ? "#fff" : "var(--color-text-primary)";
-  const borderLeft  = m.fallback ? `3px solid ${COLORS.red.text}` : m.escalated ? `3px solid ${COLORS.amber.text}` : "none";
+  const borderLeft  = m.isSummary ? `3px solid #1D9E75` : m.fallback ? `3px solid ${COLORS.red.text}` : m.escalated ? `3px solid ${COLORS.amber.text}` : m.collectingDetails ? `3px solid #EF9F27` : "none";
+
+  // Parse bold **text** in bot messages
+  const renderText = (text) => {
+    if (!text) return null;
+    const parts = text.split(/\*\*(.+?)\*\*/g);
+    return parts.map((p, i) =>
+      i % 2 === 1 ? <strong key={i}>{p}</strong> : p
+    );
+  };
 
   return (
     <div style={{ display: "flex", gap: 10, flexDirection: isBot ? "row" : "row-reverse", alignItems: "flex-start" }}>
       <div style={{ width: 30, height: 30, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, background: isBot ? COLORS.purple.bg : COLORS.green.bg, color: isBot ? COLORS.purple.solid : COLORS.green.text, border: `0.5px solid ${isBot ? COLORS.purple.border : COLORS.green.border}` }}>
         {isBot ? <i className="ti ti-robot" style={{ fontSize: 14 }} aria-hidden="true" /> : <i className="ti ti-user" style={{ fontSize: 14 }} aria-hidden="true" />}
       </div>
+
       <div style={{ maxWidth: "76%" }}>
+        {/* File attachment preview (user side) */}
+        {!isBot && m.file && (
+          <div style={{ marginBottom: 6, display: "flex", justifyContent: "flex-end" }}>
+            {m.file.type?.startsWith("image/") ? (
+              <img src={m.file.dataUrl} alt={m.file.name} style={{ maxWidth: 180, maxHeight: 120, borderRadius: 8, objectFit: "cover", border: "0.5px solid var(--color-border-tertiary)" }} />
+            ) : (
+              <div style={{ padding: "6px 10px", background: COLORS.purple.bg, border: `0.5px solid ${COLORS.purple.border}`, borderRadius: 7, fontSize: 11, color: COLORS.purple.solid, display: "flex", alignItems: "center", gap: 5 }}>
+                <i className="ti ti-file" style={{ fontSize: 13 }} /> {m.file.name}
+              </div>
+            )}
+          </div>
+        )}
+
+        {m.isSummary && (
+          <div style={{ fontSize: 10, fontWeight: 600, color: "#3B6D11", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 3, display: "flex", alignItems: "center", gap: 4 }}>
+            <i className="ti ti-sparkles" style={{ fontSize: 11 }} /> AI Issue Summary
+          </div>
+        )}
         <div style={{ padding: "9px 13px", fontSize: 13, lineHeight: 1.58, background: bubbleBg, color: bubbleColor, borderLeft, borderRadius: isBot ? "4px 12px 12px 12px" : "12px 4px 12px 12px", whiteSpace: "pre-wrap" }}>
-          {msg.text}
+          {renderText(msg.text)}
         </div>
+
+        {/* Bot meta row */}
         {isBot && m.conf != null && (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4, alignItems: "center" }}>
-            <span style={{ fontSize: 11, color: m.conf > 0.7 ? "#3B6D11" : m.conf > 0.5 ? "#854F0B" : "#A32D2D" }}>{Math.round(m.conf * 100)}% confidence</span>
-            {m.cat && m.cat !== "unknown" && m.cat !== "self_corrected" && <Badge color="gray">{m.cat}</Badge>}
+            <span style={{ fontSize: 11, color: m.conf > 0.7 ? "#3B6D11" : m.conf > 0.5 ? "#854F0B" : "#A32D2D" }}>
+              {Math.round(m.conf * 100)}% confidence
+            </span>
+            {m.cat && m.cat !== "unknown" && m.cat !== "self_corrected" && m.cat !== "llm_generated" && (
+              <Badge color="gray">{m.cat}</Badge>
+            )}
             {m.self_corrected && <span style={{ fontSize: 11, color: COLORS.purple.solid }}>✓ Self-corrected</span>}
-            {m.hinglish       && <span style={{ fontSize: 11, color: "var(--color-text-tertiary)" }}>Hinglish</span>}
-            {m.ticketId       && <span style={{ fontSize: 11, color: COLORS.amber.text }}><i className="ti ti-ticket" style={{ fontSize: 11 }} /> {m.ticketId} · {m.trigger}</span>}
+            {m.hinglish       && <span style={{ fontSize: 11, color: "var(--color-text-tertiary)" }}>🇮🇳 Hinglish</span>}
+          </div>
+        )}
+
+        {/* Escalation / ticket card */}
+        {isBot && m.ticketId && (
+          <div style={{ marginTop: 8, padding: "9px 12px", background: COLORS.amber.bg, border: `0.5px solid ${COLORS.amber.border}`, borderRadius: 8, fontSize: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <i className="ti ti-ticket" style={{ fontSize: 13, color: COLORS.amber.text }} />
+              <span style={{ fontWeight: 600, color: COLORS.amber.text }}>Ticket {m.ticketId} created</span>
+              <Badge color="red">High Priority</Badge>
+            </div>
+            <div style={{ color: "var(--color-text-secondary)", display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {m.dept && m.dept !== "unknown" && m.dept !== "llm_generated" && (
+                <span><i className="ti ti-building" style={{ fontSize: 11, marginRight: 3 }} />Dept: <strong>{m.dept}</strong></span>
+              )}
+              {m.trigger && (
+                <span><i className="ti ti-zap" style={{ fontSize: 11, marginRight: 3 }} />Trigger: {m.trigger}</span>
+              )}
+            </div>
           </div>
         )}
       </div>

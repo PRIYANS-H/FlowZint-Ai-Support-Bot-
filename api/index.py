@@ -23,7 +23,7 @@ from ticketing.priority import compute_priority, should_create_ticket
 from ticketing.create_ticket import create_ticket, get_all_tickets
 from churn.predict import predict_churn, get_all_churn_risks
 from clustering.live_clusters import get_live_clusters
-from llm.groq_generate import generate_answer
+from llm.groq_generate import generate_answer, summarize_issue, suggest_reply
 
 
 app = FastAPI(title="Flowzint API", version="3.0.0")
@@ -63,6 +63,7 @@ class ChatResponse(BaseModel):
     drift:         dict
     ticket_id:     str | None = None
     trigger:       str | None = None
+    summary:       str | None = None
 
 class CorrectionRequest(BaseModel):
     question:       str
@@ -132,12 +133,14 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)):
     priority              = compute_priority(sentiment, drift, escalate, conf)
     create_tkt, trigger   = should_create_ticket(sentiment, drift, escalate, conf)
     ticket_id             = None
+    issue_summary         = None
 
     if create_tkt and _db_ok:
+        issue_summary = summarize_issue(text_in)
         tkt_data = create_ticket(
             session_id = req.session_id,
             customer   = req.customer,
-            issue      = text_in,
+            issue      = issue_summary or text_in,
             priority   = priority,
             trigger    = trigger,
             db         = db,
@@ -173,6 +176,7 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)):
         drift          = drift,
         ticket_id      = ticket_id,
         trigger        = trigger if create_tkt else None,
+        summary        = issue_summary,
     )
 
 
@@ -183,6 +187,19 @@ def tickets_list(db: Session = Depends(get_db)):
     if db is None:
         return []
     return get_all_tickets(db)
+
+
+# ── POST /api/tickets/{ticket_ref}/suggest-reply ──────────────────────
+
+class SuggestReplyRequest(BaseModel):
+    issue:    str
+    category: str = "general"
+    customer: str = "the customer"
+
+@app.post("/api/tickets/{ticket_ref}/suggest-reply")
+def ticket_suggest_reply(ticket_ref: str, req: SuggestReplyRequest):
+    reply = suggest_reply(issue=req.issue, category=req.category, customer=req.customer)
+    return {"reply": reply}
 
 
 # ── GET /api/analytics/clusters ──────────────────────────────────────

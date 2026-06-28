@@ -80,3 +80,57 @@ def generate_answer(
             "groq_used": False,
             "conf": 0.30,
         }
+
+
+def summarize_issue(conversation: str) -> str:
+    """Generate a 2-sentence AI summary of the customer issue for the ticket."""
+    try:
+        key = os.environ.get("GROQ_API_KEY", "")
+        if not key:
+            return conversation[:120]
+
+        resp = requests.post(
+            GROQ_URL,
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={
+                "model": "llama-3.1-8b-instant",
+                "messages": [
+                    {"role": "system", "content": "You summarize customer support issues in exactly 2 sentences. Be factual and concise. Start with 'Customer reports'."},
+                    {"role": "user", "content": f"Summarize this customer issue for a support ticket:\n\n{conversation}"},
+                ],
+                "max_tokens": 80,
+                "temperature": 0.1,
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"].strip()
+    except Exception:
+        return conversation[:120]
+
+
+def suggest_reply(issue: str, category: str, customer: str = "the customer") -> str:
+    """Generate a suggested agent reply for a support ticket."""
+    try:
+        key = os.environ.get("GROQ_API_KEY", "")
+        if not key:
+            return ""
+
+        resp = requests.post(
+            GROQ_URL,
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            json={
+                "model": "llama-3.1-8b-instant",
+                "messages": [
+                    {"role": "system", "content": "You are a helpful customer support agent for an Indian e-commerce platform. Write a professional, empathetic reply to a customer ticket. Keep it under 4 sentences. Start with a greeting using their name if provided."},
+                    {"role": "user", "content": f"Customer: {customer}\nCategory: {category}\nIssue: {issue}\n\nWrite a reply:"},
+                ],
+                "max_tokens": 120,
+                "temperature": 0.3,
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"].strip()
+    except Exception:
+        return ""
