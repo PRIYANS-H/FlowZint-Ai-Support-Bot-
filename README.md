@@ -5,8 +5,9 @@
   <p>
     <img src="https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react" alt="React" />
     <img src="https://img.shields.io/badge/FastAPI-Vercel-009688?style=flat-square&logo=fastapi" alt="FastAPI" />
-    <img src="https://img.shields.io/badge/Groq-llama--3.1--8b-f43f5e?style=flat-square" alt="Groq" />
+    <img src="https://img.shields.io/badge/Groq-llama--3.1--8b--instant-f43f5e?style=flat-square" alt="Groq" />
     <img src="https://img.shields.io/badge/Supabase-pgvector-3ECF8E?style=flat-square&logo=supabase" alt="Supabase" />
+    <img src="https://img.shields.io/badge/AI-Groq%20Powered-f43f5e?style=flat-square" alt="AI Powered by Groq" />
   </p>
 </div>
 
@@ -49,10 +50,12 @@ React (Vite) ──────────────────────�
       │ /api/*
 FastAPI + Mangum ──────────────────────────────── Vercel Serverless
       │
-      ├── api/rag/retrieve.py        stem-based keyword search (primary fallback)
-      │   api/rag/embed_faqs.py      pgvector semantic retrieval via HF embeddings
-      ├── api/llm/groq_generate.py   response + issue summary + suggested reply
-      ├── api/sentiment/             multilingual scoring + drift calculation
+      ├── api/rag/retrieve.py        keyword search → FAQ answer (primary path)
+      ├── api/llm/groq_generate.py   Groq llama-3.1-8b-instant
+      │                                 · answer generation (grounded by FAQ context)
+      │                                 · 2-sentence issue summary on escalation
+      │                                 · AI suggested reply for agents
+      ├── api/sentiment/             keyword scoring + HF multilingual model (fallback)
       ├── api/ticketing/             priority scoring + Supabase write
       ├── api/churn/                 churn feature extraction + recommender
       └── api/clustering/            live KMeans on today's messages
@@ -60,6 +63,8 @@ FastAPI + Mangum ─────────────────────
 Supabase PostgreSQL + pgvector
       tables: faqs · tickets · messages · self_corrections
 ```
+
+**Every response goes through Groq.** The FAQ knowledge base grounds the answer when confidence is high; Groq generates freely when it isn't. This means every reply feels natural and context-aware rather than a verbatim DB lookup.
 
 **JS fallback engine** (`src/utils/engine.js`): word-overlap FAQ matching + Hinglish boost runs entirely in the browser if the API is unreachable — the demo never goes dark.
 
@@ -72,9 +77,10 @@ Supabase PostgreSQL + pgvector
 | Frontend | React 18, Vite, Chart.js, Tabler Icons |
 | Backend | FastAPI, Mangum (Vercel serverless adapter) |
 | Database | Supabase PostgreSQL + pgvector |
-| Embeddings | HuggingFace `all-MiniLM-L6-v2` (seeding + self-corrections) |
-| Sentiment | HuggingFace `cardiffnlp/twitter-xlm-roberta-base-sentiment-multilingual` |
-| LLM | Groq `llama-3.1-8b-instant` (answers · issue summaries · suggested replies) |
+| **LLM** | **Groq `llama-3.1-8b-instant`** — answers, issue summaries, agent reply suggestions |
+| FAQ Retrieval | Stem-based keyword search over pgvector FAQ table |
+| Sentiment | Keyword scoring with HuggingFace multilingual model fallback |
+| Embeddings | HuggingFace `all-MiniLM-L6-v2` (one-time FAQ seeding only) |
 | Clustering | scikit-learn KMeans |
 | Deployment | Vercel (frontend + serverless functions) |
 
@@ -117,17 +123,17 @@ flowzint/
 
 ## Local setup
 
-**Prerequisites:** Node 18+, Python 3.10+, a Supabase project, Groq API key, HuggingFace token.
+**Prerequisites:** Node 18+, Python 3.10+, a Supabase project, a Groq API key.
 
 ```bash
 # 1. Clone
 git clone https://github.com/PRIYANS-H/FlowZint-Ai-Support-Bot-.git
 cd FlowZint-Ai-Support-Bot-
 
-# 2. Environment — create .env and fill in:
-#    SUPABASE_DB_URL   (use the connection pooler URL from Supabase dashboard)
-#    GROQ_API_KEY
-#    HF_TOKEN
+# 2. Create .env with:
+#    SUPABASE_DB_URL=<connection pooler URL from Supabase dashboard>
+#    GROQ_API_KEY=<your Groq key from console.groq.com>
+#    HF_TOKEN=<optional — only needed to re-seed FAQ embeddings>
 
 # 3. Install dependencies
 npm install
@@ -136,12 +142,12 @@ pip install -r requirements.txt
 # 4. Seed FAQ embeddings into Supabase (run once)
 python seed_local.py
 
-# 5. Start servers
+# 5. Start both servers
 npm run dev                      # frontend  → http://localhost:5173
 uvicorn api.index:app --reload   # backend   → http://localhost:8000
 ```
 
-> Vite proxies `/api/*` to `localhost:8000` — both servers must be running together for full functionality. The JS fallback engine keeps the demo working if the API is down.
+> Vite proxies `/api/*` to `localhost:8000` — both servers must run together. `GROQ_API_KEY` is the only required AI credential; the app works without `HF_TOKEN` (sentiment falls back to keyword scoring, embeddings are only needed for re-seeding).
 
 ---
 

@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, re
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -112,12 +112,13 @@ def chat(req: ChatRequest, db: Session = Depends(get_db)):
     cat            = rag.get("cat", "unknown")
     self_corrected = rag.get("self_corrected", False)
 
-    # 5.5. Always use Groq — FAQ context grounds the answer, making every response
-    # feel AI-generated rather than a verbatim database lookup.
+    # 5.5. Always use Groq — strip file-attachment metadata before sending to LLM
+    # so it never sees "[Attached file: ...]" and responds about images.
+    clean_query   = re.sub(r"\s*\[Attached file:[^\]]*\]", "", text_in).strip()
     faq_context   = answer if conf >= 0.40 else None
     original_conf = conf
     llm_res = generate_answer(
-        query=text_in,
+        query=clean_query,
         faq_context=faq_context,
         sentiment=sentiment,
         hinglish=hinglish
