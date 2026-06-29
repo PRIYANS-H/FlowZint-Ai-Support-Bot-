@@ -41,7 +41,7 @@ function SentimentSparkline({ data }) {
   );
 }
 
-export function DashboardView({ stats, selfCorrected, tickets }) {
+export function DashboardView({ stats, selfCorrected, tickets, agentName = "" }) {
   const [apiClusters, setApiClusters]       = useState(null);
   const [apiChurnList, setApiChurnList]     = useState(null);
   const [pendingKB, setPendingKB]           = useState(null);
@@ -81,20 +81,26 @@ export function DashboardView({ stats, selfCorrected, tickets }) {
       }))
     : CLUSTERS;
 
-  // Live churn entries from high-priority tickets
-  const seenDrivers = new Set();
-  const liveChurn = (tickets || [])
-    .filter(t => t.pri === "high" && t.customer === "Current User")
+  // Live churn entries — resolve "Current User" to the agent name, skip if still anonymous
+  const resolvedName = agentName || localStorage.getItem("fz_agent_name") || "";
+  const seenNames    = new Set();
+  const liveChurn    = (tickets || [])
+    .filter(t => t.pri === "high")
     .reduce((acc, t) => {
-      if (!seenDrivers.has(t.trigger)) {
-        seenDrivers.add(t.trigger);
-        acc.push({ name: "Current User", risk: "high", driver: t.trigger, action: "Immediate intervention required", live: true });
-      }
+      const name = t.customer === "Current User" ? resolvedName : t.customer;
+      if (!name || seenNames.has(name)) return acc;
+      seenNames.add(name);
+      acc.push({ name, risk: "high", driver: t.trigger || "High-priority ticket", action: "Immediate intervention required", live: true });
       return acc;
     }, []);
 
+  // API churn list — drop "Current User" rows; fall back to seed data if nothing real remains
+  const filteredApiChurn = apiChurnList
+    ? apiChurnList.filter(c => c.name && c.name !== "Current User")
+    : null;
+
   const sentimentData = liveSentiment || HOURLY_SENTIMENT;
-  const churnList     = apiChurnList || CHURN_RISKS;
+  const churnList     = (filteredApiChurn && filteredApiChurn.length > 0) ? filteredApiChurn : CHURN_RISKS;
   const allChurnRisks = [...liveChurn, ...churnList];
 
   // KB panel: merge API pending reviews with local selfCorrected

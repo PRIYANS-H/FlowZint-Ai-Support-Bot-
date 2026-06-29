@@ -147,7 +147,7 @@ export default function App() {
 
           {view === "home"      && <LandingView onStart={setView} />}
           {view === "chat"      && <ChatView {...chat} />}
-          {view === "dashboard" && <DashboardView stats={chat.stats} selfCorrected={chat.selfCorrected} tickets={chat.tickets} />}
+          {view === "dashboard" && <DashboardView stats={chat.stats} selfCorrected={chat.selfCorrected} tickets={chat.tickets} agentName={agentName} />}
           {view === "tickets"   && <TicketsView tickets={chat.tickets} resolveTicket={chat.resolveTicket} agentName={agentName} onAgentNameChange={updateAgentName} />}
         </div>
       </div>
